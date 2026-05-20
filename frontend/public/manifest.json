@@ -1,0 +1,6 @@
+{
+  "short_name": "Personal Context MCP",
+  "name": "Personal Context MCP",
+  "start_url": ".",
+  "display": "standalone"
+}
