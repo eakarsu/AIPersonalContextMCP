@@ -326,4 +326,80 @@ router.post('/retrieval-rules', (req, res) => {
   }
 });
 
+// =====================================================================
+// Apply pass 7 (full backlog implementation)
+// VIZ 3: GET /api/custom-views/share-graph
+//   apps × fields × last-disclosed matrix from disclosure_log ⨯ app_consents.
+//   Used by "What each AI knows about you" UI surface.
+// =====================================================================
+router.get('/share-graph', async (req, res) => {
+  try {
+    const consentsRes = await pool.query(
+      `SELECT id, app_name, scope, allowed_fields, status, expires_at FROM app_consents ORDER BY app_name ASC`
+    );
+    const disclosureRes = await pool.query(
+      `SELECT app_name, fields_disclosed, purpose, COALESCE(disclosed_at, created_at) AS at
+       FROM disclosure_log ORDER BY COALESCE(disclosed_at, created_at) DESC`
+    );
+
+    // Build matrix: app -> { fields: Map<field, {last_disclosed, count, purposes}> }
+    const matrix = new Map();
+    function ensure(app) {
+      if (!matrix.has(app)) matrix.set(app, { app_name: app, status: null, scope: null, allowed_fields: null, fields: new Map(), total_disclosures: 0 });
+      return matrix.get(app);
+    }
+    for (const c of consentsRes.rows) {
+      const e = ensure(c.app_name);
+      e.status = c.status;
+      e.scope = c.scope;
+      e.allowed_fields = c.allowed_fields;
+      String(c.allowed_fields || '').split(/[,;]/).map((s) => s.trim()).filter(Boolean).forEach((f) => {
+        if (!e.fields.has(f)) e.fields.set(f, { field: f, count: 0, last_disclosed: null, purposes: new Set(), source: 'consented' });
+      });
+    }
+    for (const d of disclosureRes.rows) {
+      const e = ensure(d.app_name);
+      e.total_disclosures += 1;
+      String(d.fields_disclosed || '').split(/[,;]/).map((s) => s.trim()).filter(Boolean).forEach((f) => {
+        if (!e.fields.has(f)) e.fields.set(f, { field: f, count: 0, last_disclosed: null, purposes: new Set(), source: 'disclosed_only' });
+        const fr = e.fields.get(f);
+        fr.count += 1;
+        const ts = d.at ? new Date(d.at).toISOString() : null;
+        if (ts && (!fr.last_disclosed || ts > fr.last_disclosed)) fr.last_disclosed = ts;
+        if (d.purpose) fr.purposes.add(d.purpose);
+      });
+    }
+
+    const apps = Array.from(matrix.values()).map((e) => ({
+      app_name: e.app_name,
+      status: e.status,
+      scope: e.scope,
+      allowed_fields: e.allowed_fields,
+      total_disclosures: e.total_disclosures,
+      fields: Array.from(e.fields.values()).map((f) => ({
+        field: f.field,
+        count: f.count,
+        last_disclosed: f.last_disclosed,
+        purposes: Array.from(f.purposes),
+        source: f.source,
+      })).sort((a, b) => b.count - a.count),
+    })).sort((a, b) => (b.total_disclosures - a.total_disclosures) || a.app_name.localeCompare(b.app_name));
+
+    const allFields = new Set();
+    apps.forEach((a) => a.fields.forEach((f) => allFields.add(f.field)));
+
+    res.json({
+      ok: true,
+      generated_at: new Date().toISOString(),
+      apps,
+      app_count: apps.length,
+      field_count: allFields.size,
+      all_fields: Array.from(allFields).sort(),
+    });
+  } catch (err) {
+    console.error('share-graph error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -20,12 +20,24 @@ const AI_LINKS = [
   { to: '/ai/privacy-risk-score', label: 'AI · Privacy Risk Score' },
   { to: '/ai/intent-classifier', label: 'AI · Intent Classifier' },
   { to: '/ai/schema-extractor', label: 'AI · Schema Extractor' },
+  // Apply pass 7 (full backlog implementation)
+  { to: '/ai/context-summarizer', label: 'AI · Context Summarizer' },
+  { to: '/ai/relevance-scorer',   label: 'AI · Relevance Scorer' },
+  { to: '/ai/query-rewriter',     label: 'AI · Query Rewriter' },
+  { to: '/ai/conflict-detector',  label: 'AI · Conflict Detector' },
 ];
 
 const CUSTOM_LINKS = [
   { to: '/wb/consent-center', label: 'Consent Center' },
   { to: '/wb/mcp-server-config', label: 'MCP Server Config' },
   { to: '/custom-views', label: 'Context Views' },
+  // Apply pass 7 (full backlog implementation)
+  { to: '/dp-budgets',        label: 'DP Budgets' },
+  { to: '/share-graph',       label: 'Share-with-AI Dashboard' },
+  { to: '/recall-and-forget', label: 'Recall & Forget' },
+  { to: '/context-bundle',    label: 'Context Bundle Export' },
+  { to: '/mcp-rpc-console',   label: 'MCP RPC Console' },
+  { to: '/disclosure-simulator', label: 'Disclosure Simulator' },
 ];
 
 export default function Sidebar() {

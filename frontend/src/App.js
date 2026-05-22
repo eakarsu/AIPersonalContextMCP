@@ -24,6 +24,23 @@ import CustomViewsPage from './pages/CustomViewsPage';
 import { getToken } from './services/api';
 import './App.css';
 
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
+
+import TimelineView from './pages/TimelineView';
+
+// Apply pass 7 (full backlog implementation)
+import AIContextSummarizerPage from './pages/AIContextSummarizerPage';
+import AIRelevanceScorerPage from './pages/AIRelevanceScorerPage';
+import AIQueryRewriterPage from './pages/AIQueryRewriterPage';
+import AIConflictDetectorPage from './pages/AIConflictDetectorPage';
+import DPBudgetsPage from './pages/DPBudgetsPage';
+import ShareGraphPage from './pages/ShareGraphPage';
+import RecallAndForgetPage from './pages/RecallAndForgetPage';
+import ContextBundleExportPage from './pages/ContextBundleExportPage';
+import McpRpcConsolePage from './pages/McpRpcConsolePage';
+import DisclosureSimulatorPage from './pages/DisclosureSimulatorPage';
+
 function RequireAuth({ children }) {
   const location = useLocation();
   if (!getToken()) return <Navigate to="/login" replace state={{ from: location }} />;
@@ -38,6 +55,10 @@ function Shell() {
         <Topbar />
         <div style={{ padding: '24px 32px' }}>
           <Routes>
+        <Route path="/insights/timeline" element={<TimelineView />} />
+        <Route path="/codex/custom-viz" element={<CodexCustomVizFeature />} />
+        <Route path="/codex/operations" element={<CodexOperationsFeature />} />
+
             <Route path="/" element={<Dashboard />} />
             <Route path="/connectors" element={<ConnectorsPage />} />
             <Route path="/data-sources" element={<DataSourcesPage />} />
@@ -56,6 +77,17 @@ function Shell() {
             <Route path="/wb/consent-center" element={<ConsentCenterWorkbench />} />
             <Route path="/wb/mcp-server-config" element={<McpServerConfigWorkbench />} />
             <Route path="/custom-views" element={<CustomViewsPage />} />
+            {/* Apply pass 7 (full backlog implementation) */}
+            <Route path="/ai/context-summarizer" element={<AIContextSummarizerPage />} />
+            <Route path="/ai/relevance-scorer"   element={<AIRelevanceScorerPage />} />
+            <Route path="/ai/query-rewriter"     element={<AIQueryRewriterPage />} />
+            <Route path="/ai/conflict-detector"  element={<AIConflictDetectorPage />} />
+            <Route path="/dp-budgets"            element={<DPBudgetsPage />} />
+            <Route path="/share-graph"           element={<ShareGraphPage />} />
+            <Route path="/recall-and-forget"     element={<RecallAndForgetPage />} />
+            <Route path="/context-bundle"        element={<ContextBundleExportPage />} />
+            <Route path="/mcp-rpc-console"       element={<McpRpcConsolePage />} />
+            <Route path="/disclosure-simulator"  element={<DisclosureSimulatorPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

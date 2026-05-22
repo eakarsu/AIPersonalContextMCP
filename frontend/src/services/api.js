@@ -62,6 +62,44 @@ export const aiRedactionSuggester = (body) => request('/ai/redaction-suggester',
 export const aiPrivacyRiskScore = (body) => request('/ai/privacy-risk-score', { method: 'POST', body: JSON.stringify(body || {}) });
 export const aiIntentClassifier = (body) => request('/ai/intent-classifier', { method: 'POST', body: JSON.stringify(body || {}) });
 export const aiSchemaExtractor = (body) => request('/ai/schema-extractor', { method: 'POST', body: JSON.stringify(body || {}) });
+// Apply pass 7 (full backlog implementation)
+export const aiContextSummarizer = (body) => request('/ai/context-summarizer', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiRelevanceScorer   = (body) => request('/ai/relevance-scorer',   { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiQueryRewriter     = (body) => request('/ai/query-rewriter',     { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiConflictDetector  = (body) => request('/ai/conflict-detector',  { method: 'POST', body: JSON.stringify(body || {}) });
+
+export const dpBudgetsApi = {
+  list: () => request('/dp-budgets'),
+  create: (d) => request('/dp-budgets', { method: 'POST', body: JSON.stringify(d) }),
+  update: (id, d) => request(`/dp-budgets/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
+  remove: (id) => request(`/dp-budgets/${id}`, { method: 'DELETE' }),
+  spend: (app, body) => request(`/dp-budgets/${encodeURIComponent(app)}/spend`, { method: 'POST', body: JSON.stringify(body) }),
+  ledger: (app) => request(`/dp-budgets/${encodeURIComponent(app)}/ledger`),
+};
+
+export const forgetRequestsApi = {
+  list: () => request('/forget-requests'),
+  get: (id) => request(`/forget-requests/${id}`),
+  create: (d) => request('/forget-requests', { method: 'POST', body: JSON.stringify(d) }),
+  complete: (id) => request(`/forget-requests/${id}/complete`, { method: 'POST', body: JSON.stringify({}) }),
+};
+
+export const revokeConsent = (id, reason) =>
+  request(`/app-consents/${id}/revoke`, { method: 'POST', body: JSON.stringify({ reason: reason || 'user_revoked' }) });
+
+export const getShareGraph = () => request('/custom-views/share-graph');
+
+export const getContextBundle = (app_name) => {
+  const qs = app_name ? `?app_name=${encodeURIComponent(app_name)}` : '';
+  return request(`/export/context-bundle${qs}`);
+};
+
+export const getMcpManifest = () => request('/mcp/rpc/manifest');
+export const callMcpRpc = (method, params, id = 1) =>
+  request('/mcp/rpc', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id, method, params: params || {} }) });
+export const disclosureSimulate = (body) => request('/disclosure-simulator/simulate', { method: 'POST', body: JSON.stringify(body || {}) });
+
+export const oauthStatus = (provider) => request(`/oauth/${provider}/status`);
 
 export const getAIHistory = (feature, limit = 25) => {
   const qs = new URLSearchParams({ ...(feature ? { feature } : {}), limit: String(limit) }).toString();

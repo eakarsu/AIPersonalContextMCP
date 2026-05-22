@@ -10,7 +10,12 @@ const SCHEMAS = {
   'redaction-suggester': `{"redaction_plan":[{"original":string,"redacted":string,"rationale":string}],"residual_risk":"low"|"medium"|"high","summary":string}`,
   'privacy-risk-score': `{"risk_score":number,"risk_drivers":[{"driver":string,"weight":number}],"recommendation":"allow"|"limit"|"deny","alternative_scopes":[string],"summary":string}`,
   'intent-classifier': `{"intent":string,"confidence":number,"required_scopes":[string],"safe_to_auto_answer":boolean,"summary":string}`,
-  'schema-extractor': `{"schema_name":string,"fields":[{"name":string,"type":string,"required":boolean,"example":string}],"sensitivity_per_field":[{"field":string,"class":string}],"summary":string}`
+  'schema-extractor': `{"schema_name":string,"fields":[{"name":string,"type":string,"required":boolean,"example":string}],"sensitivity_per_field":[{"field":string,"class":string}],"summary":string}`,
+  // Apply pass 7 (full backlog implementation) — 4 mechanical AI counterparts.
+  'context-summarizer': `{"brief":string,"key_facts":[string],"entities":[{"name":string,"type":string}],"omitted_sensitive_fields":[string],"token_estimate":number,"summary":string}`,
+  'relevance-scorer': `{"query":string,"scored_shards":[{"shard_id":string,"score":number,"rationale":string,"source_type":string}],"top_k":[string],"discarded":[string],"summary":string}`,
+  'query-rewriter': `{"original_query":string,"rewritten_query":string,"expansions":[string],"user_scope_injected":[string],"identifiers_stripped":[string],"summary":string}`,
+  'conflict-detector': `{"conflicts":[{"field":string,"sources":[{"source":string,"value":string}],"severity":"low"|"medium"|"high","resolution_hint":string}],"consistent_fields":[string],"summary":string}`
 };
 
 const SAMPLES = {
@@ -48,6 +53,26 @@ const SAMPLES = {
     { label: 'Bank CSV', values: {"sample_data":"date,merchant,amount\\n2026-05-01,Acme,42.18","source_hint":"bank tx"} },
     { label: 'Fitness JSON', values: {"sample_data":"{\"date\":\"2026-05-15\",\"steps\":8421}","source_hint":"fitness"} },
     { label: 'vCard', values: {"sample_data":"FN:Jane\\nEMAIL:j@x.com","source_hint":"contact"} }
+  ],
+  'context-summarizer': [
+    { label: 'Email thread', values: {"context_kind":"email_thread","raw_context":"From: boss@x.com\nSubject: Q3 review\nMeeting Thursday 3pm to discuss Q3 numbers and headcount.","target_app":"Personal assistant"} },
+    { label: 'Calendar block', values: {"context_kind":"calendar","raw_context":"Tue 10am-11am Dentist Dr. Smith. Wed all-day company offsite Mountain View.","target_app":"Travel planner"} },
+    { label: 'Notes doc', values: {"context_kind":"notes","raw_context":"Project Alpha launch checklist: 1) finalize marketing copy 2) brief PR 3) confirm pricing $99/mo","target_app":"Product copilot"} }
+  ],
+  'relevance-scorer': [
+    { label: 'Travel question', values: {"query":"When am I next traveling?","candidate_shards":"[{\"id\":\"cal-1\",\"text\":\"Flight to NYC May 28\",\"source\":\"calendar\"},{\"id\":\"em-2\",\"text\":\"Dentist invoice paid\",\"source\":\"gmail\"},{\"id\":\"nt-3\",\"text\":\"Pack laptop charger\",\"source\":\"notes\"}]"} },
+    { label: 'Workout history', values: {"query":"Did I work out last week?","candidate_shards":"[{\"id\":\"hl-1\",\"text\":\"5km run Monday\",\"source\":\"health\"},{\"id\":\"em-9\",\"text\":\"Costco receipt\",\"source\":\"gmail\"}]"} },
+    { label: 'Finance lookup', values: {"query":"What were my Amazon charges in April?","candidate_shards":"[{\"id\":\"fin-1\",\"text\":\"Amazon $48.20 Apr 2\",\"source\":\"finance\"},{\"id\":\"fin-2\",\"text\":\"Whole Foods $112\",\"source\":\"finance\"}]"} }
+  ],
+  'query-rewriter': [
+    { label: 'Pronoun expansion', values: {"original_query":"When is my next meeting with him?","user_context":"user=Jane; recent contacts: Bob (manager)","target_app":"Assistant"} },
+    { label: 'Vague time', values: {"original_query":"What's on tap soon?","user_context":"timezone=PT","target_app":"Calendar assistant"} },
+    { label: 'PII strip', values: {"original_query":"Lookup my SSN 123-45-6789 in tax docs","user_context":"","target_app":"Tax filing"} }
+  ],
+  'conflict-detector': [
+    { label: 'Calendar vs email', values: {"sources_json":"{\"calendar\":\"Dinner with Sara Fri 7pm Sushi Roku\",\"email\":\"Sara: let's push dinner to 8pm Friday\"}"} },
+    { label: 'Notes vs contacts', values: {"sources_json":"{\"notes\":\"Bob's phone 415-555-1212\",\"contacts\":\"Bob Smith 650-555-9988\"}"} },
+    { label: 'Health metrics', values: {"sources_json":"{\"apple_health\":\"Resting HR 62\",\"oura\":\"Resting HR 71\"}"} }
   ]
 };
 
@@ -131,6 +156,39 @@ router.post('/schema-extractor', async (req, res) => {
   try {
     const result = await ai.runFeature('schema-extractor', SCHEMAS['schema-extractor'], req.body || {});
     await record('schema-extractor', req.body || {}, result);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Apply pass 7 (full backlog implementation) — 4 new AI handlers (MECHANICAL).
+router.post('/context-summarizer', async (req, res) => {
+  try {
+    const result = await ai.runFeature('context-summarizer', SCHEMAS['context-summarizer'], req.body || {});
+    await record('context-summarizer', req.body || {}, result);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/relevance-scorer', async (req, res) => {
+  try {
+    const result = await ai.runFeature('relevance-scorer', SCHEMAS['relevance-scorer'], req.body || {});
+    await record('relevance-scorer', req.body || {}, result);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/query-rewriter', async (req, res) => {
+  try {
+    const result = await ai.runFeature('query-rewriter', SCHEMAS['query-rewriter'], req.body || {});
+    await record('query-rewriter', req.body || {}, result);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/conflict-detector', async (req, res) => {
+  try {
+    const result = await ai.runFeature('conflict-detector', SCHEMAS['conflict-detector'], req.body || {});
+    await record('conflict-detector', req.body || {}, result);
     res.json(result);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
