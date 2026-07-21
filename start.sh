@@ -1,44 +1,70 @@
-#!/bin/bash
-set -e
-BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
-echo -e "${BLUE}== Personal Context MCP ==${NC}"
-if [ -f .env ]; then export $(grep -v '^#' .env | xargs); fi
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+APP_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$APP_ROOT"
+
+if [[ ! -f .env ]]; then
+  echo 'Missing .env; copy .env.example and provide local secrets.' >&2
+  exit 1
+fi
+set -a
+source .env
+set +a
+
+: "${DATABASE_URL:?DATABASE_URL is required}"
+: "${JWT_SECRET:?JWT_SECRET is required}"
+if (( ${#JWT_SECRET} < 32 )); then
+  echo 'JWT_SECRET must contain at least 32 characters.' >&2
+  exit 1
+fi
 BACKEND_PORT=${BACKEND_PORT:-4063}
 FRONTEND_PORT=${FRONTEND_PORT:-4062}
-DB_NAME=${DB_NAME:-personal_context_mcp}
-DB_USER=${DB_USER:-postgres}
-echo -e "${YELLOW}Cleaning ports...${NC}"
-lsof -ti:$BACKEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-lsof -ti:$FRONTEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-echo -e "${YELLOW}Checking PostgreSQL...${NC}"
-if ! pg_isready -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} > /dev/null 2>&1; then
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    brew services start postgresql@14 2>/dev/null || brew services start postgresql 2>/dev/null || true
-    sleep 2
+export BACKEND_PORT
+
+for dependency_dir in backend/node_modules frontend/node_modules; do
+  if [[ ! -d "$dependency_dir" ]]; then
+    echo "Missing $dependency_dir; install dependencies explicitly before starting." >&2
+    exit 1
   fi
-fi
-echo -e "${GREEN}✓ Postgres ok${NC}"
-psql -h ${DB_HOST:-localhost} -U $DB_USER -tc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" 2>/dev/null | grep -q 1 || \
-  createdb -h ${DB_HOST:-localhost} -U $DB_USER $DB_NAME 2>/dev/null || true
-echo -e "${GREEN}✓ DB ready ($DB_NAME)${NC}"
-cd backend && [ -d node_modules ] || npm install --silent 2>&1 | tail -3
-cd ..
-cd frontend && [ -d node_modules ] || npm install --silent 2>&1 | tail -3
-cd ..
-(cd backend && node seed/seed.js) || true
-echo -e "${GREEN}✓ Seeded${NC}"
-echo -e "${BLUE}Backend on $BACKEND_PORT, Frontend on $FRONTEND_PORT${NC}"
-(cd backend && npx --yes nodemon server.js) &
-BACKEND_PID=$!
-sleep 2
-(cd frontend && BROWSER=none PORT=$FRONTEND_PORT npm start) &
-FRONTEND_PID=$!
-cleanup() {
-  kill $BACKEND_PID 2>/dev/null || true
-  kill $FRONTEND_PID 2>/dev/null || true
-  lsof -ti:$BACKEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-  lsof -ti:$FRONTEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-  exit 0
+done
+
+check_port() {
+  local port="$1"
+  if command -v lsof >/dev/null 2>&1 && lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+    echo "Port $port is already in use; refusing to terminate an unrelated process." >&2
+    exit 1
+  fi
 }
-trap cleanup SIGINT SIGTERM
-wait
+check_port "$BACKEND_PORT"
+check_port "$FRONTEND_PORT"
+
+BACKEND_PID=
+FRONTEND_PID=
+cleanup() {
+  local status=$?
+  trap - EXIT INT TERM
+  [[ -n "${BACKEND_PID:-}" ]] && kill "$BACKEND_PID" 2>/dev/null || true
+  [[ -n "${FRONTEND_PID:-}" ]] && kill "$FRONTEND_PID" 2>/dev/null || true
+  [[ -n "${BACKEND_PID:-}" ]] && wait "$BACKEND_PID" 2>/dev/null || true
+  [[ -n "${FRONTEND_PID:-}" ]] && wait "$FRONTEND_PID" 2>/dev/null || true
+  exit "$status"
+}
+trap cleanup EXIT INT TERM
+
+(cd backend && npm start) &
+BACKEND_PID=$!
+(cd frontend && BROWSER=none PORT="$FRONTEND_PORT" npm start) &
+FRONTEND_PID=$!
+
+while kill -0 "$BACKEND_PID" 2>/dev/null && kill -0 "$FRONTEND_PID" 2>/dev/null; do
+  sleep 1
+done
+
+status=0
+if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+  wait "$BACKEND_PID" || status=$?
+else
+  wait "$FRONTEND_PID" || status=$?
+fi
+exit "$status"

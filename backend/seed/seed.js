@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const pool = require('../config/database');
+const { hashPassword } = require('../security/password');
 
 async function main() {
   const migDir = path.join(__dirname, '..', 'migrations');
@@ -9,10 +10,15 @@ async function main() {
     try { await pool.query(sql); console.log(`[seed] applied ${f}`); }
     catch (e) { console.warn(`[seed] ${f} warn: ${e.message}`); }
   }
+  const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL;
+  const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) throw new Error('BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD are required for explicit seeding');
+  const passwordHash = await hashPassword(adminPassword);
   await pool.query(
-    "INSERT INTO users (email, password, name, role) VALUES ('admin@personal-context-mcp.local','secure123','Admin','commander') ON CONFLICT (email) DO NOTHING"
+    "INSERT INTO users (email, password, name, role) VALUES ($1,$2,'Admin','commander') ON CONFLICT (email) DO NOTHING",
+    [adminEmail, passwordHash]
   );
-  console.log('[seed] demo user ready');
+  console.log('[seed] bootstrap admin ready');
 
   // connectors
   for (const row of [{"name":"Apple Health","provider":"apple","status":"connected","last_synced":null},{"name":"Google Calendar","provider":"google","status":"connected","last_synced":null},{"name":"Apple Mail","provider":"apple","status":"connected","last_synced":null},{"name":"Plaid","provider":"plaid","status":"disconnected","last_synced":null}]) {

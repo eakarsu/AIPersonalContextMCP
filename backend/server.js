@@ -28,6 +28,7 @@ app.use('/api/disclosure-log', require('./routes/DisclosureLog'));
 app.use('/api/mcp-clients', require('./routes/McpClients'));
 app.use('/api/schemas', require('./routes/Schemas'));
 app.use('/api/redaction-rules', require('./routes/RedactionRules'));
+app.use('/api/context-workflows', require('./routes/contextWorkflow'));
 
 // AI + cross-cutting
 app.use('/api/ai', require('./routes/ai'));
