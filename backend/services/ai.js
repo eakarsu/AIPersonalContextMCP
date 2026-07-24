@@ -1,25 +1,9 @@
 // LLM helper for Personal Context MCP
-const fs = require('fs');
-const FALLBACK_ENV = '/Users/erolakarsu/projects/beauty-wellness-ai/.env';
-function readFallback() {
-  try {
-    if (!fs.existsSync(FALLBACK_ENV)) return {};
-    const out = {};
-    for (const line of fs.readFileSync(FALLBACK_ENV, 'utf8').split('\n')) {
-      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-      if (!m) continue;
-      let v = m[2];
-      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-      out[m[1]] = v;
-    }
-    return out;
-  } catch (_) { return {}; }
-}
 function creds() {
-  const fb = readFallback();
   return {
-    key: process.env.OPENROUTER_API_KEY || fb.OPENROUTER_API_KEY || '',
-    model: process.env.OPENROUTER_MODEL || fb.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5',
+    key: process.env.OPENROUTER_API_KEY || '',
+    model: process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5',
+    baseUrl: (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, ''),
   };
 }
 const SYSTEM_BASE = 'You are a senior analyst supporting the Personal Context MCP. ' +
@@ -28,33 +12,29 @@ const SYSTEM_BASE = 'You are a senior analyst supporting the Personal Context MC
   '(4) Keep concise to fit token limit; never truncate. ' +
   '(5) First char must be `{`, last must be `}`.';
 
-function callOpenRouter(systemPrompt, userPrompt) {
-  return new Promise((resolve) => {
-    const { key, model } = creds();
-    if (!key) return resolve({ error: 'OPENROUTER_API_KEY not configured' });
-    const https = require('https');
-    const payload = JSON.stringify({
+async function callOpenRouter(systemPrompt, userPrompt) {
+    const { key, model, baseUrl } = creds();
+    if (!key) throw new Error('OPENROUTER_API_KEY not configured');
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${key}`,
+        'HTTP-Referer': process.env.CLIENT_URL || 'http://localhost:4062',
+        'X-Title': 'Personal Context MCP',
+      },
+      body: JSON.stringify({
       model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
       temperature: 0.4, max_tokens: 6000, response_format: { type: 'json_object' },
+      }),
     });
-    const req = https.request({
-      hostname: 'openrouter.ai', path: '/api/v1/chat/completions', method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload),
-        Authorization: `Bearer ${key}`,
-        'HTTP-Referer': 'http://localhost:4062', 'X-Title': 'Personal Context MCP' },
-    }, (res) => {
-      let body = ''; res.on('data', (c) => (body += c));
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(body);
-          if (parsed.error) return resolve({ error: parsed.error.message || 'OpenRouter error' });
-          resolve(parsed.choices?.[0]?.message?.content || '');
-        } catch (e) { resolve({ error: 'parse failed' }); }
-      });
-    });
-    req.on('error', (e) => resolve({ error: e.message }));
-    req.write(payload); req.end();
-  });
+    const body = await response.text();
+    let parsed;
+    try { parsed = JSON.parse(body); } catch (_) { throw new Error(`OpenRouter returned invalid JSON (${response.status})`); }
+    if (!response.ok || parsed.error) throw new Error(parsed.error?.message || `OpenRouter request failed (${response.status})`);
+    const content = parsed.choices?.[0]?.message?.content;
+    if (!content) throw new Error('OpenRouter returned no content');
+    return content;
 }
 function stripFences(text) {
   let t = String(text).trim();

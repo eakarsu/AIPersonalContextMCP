@@ -5,6 +5,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const { authenticateToken } = require('./middleware/auth');
+const { bootstrapRuntime } = require('./runtimeBootstrap');
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 4063;
@@ -54,4 +55,12 @@ app.use('/api/disclosure-simulator', require('./routes/disclosureSimulator'));
 // 404 fallback for unknown /api/* routes
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found', path: req.originalUrl }));
 
-app.listen(PORT, () => console.log(`\nPersonal Context MCP API on http://localhost:${PORT}\n`));
+async function start() {
+  await bootstrapRuntime();
+  app.listen(PORT, () => console.log(`\nPersonal Context MCP API on http://localhost:${PORT}\n`));
+}
+
+start().catch((error) => {
+  console.error('Failed to start Personal Context MCP:', error);
+  process.exit(1);
+});

@@ -26,8 +26,14 @@ router.post('/login', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Server error' }); }
 });
 
-router.get('/me', authenticateToken, (req, res) => {
-  res.json({ id: req.user.id, email: req.user.email, name: req.user.name, role: req.user.role });
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, email, name, role FROM users WHERE id=$1 LIMIT 1', [req.user.id]);
+    if (!result.rows.length) return res.status(404).json({ error: 'User not found' });
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 router.get('/users', authenticateToken, requireCommander, async (req, res) => {

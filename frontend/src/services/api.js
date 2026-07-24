@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:4063/api';
+const API_BASE = process.env.REACT_APP_API_URL || '/api';
 const TOKEN_KEY = 'personal_context_mcp_token';
 const USER_KEY = 'personal_context_mcp_user';
 

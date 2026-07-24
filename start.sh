@@ -52,9 +52,9 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-(cd backend && npm start) &
+(cd backend && exec node server.js) &
 BACKEND_PID=$!
-(cd frontend && BROWSER=none PORT="$FRONTEND_PORT" npm start) &
+(cd frontend && exec env BROWSER=none PORT="$FRONTEND_PORT" ./node_modules/.bin/react-scripts start) &
 FRONTEND_PID=$!
 
 while kill -0 "$BACKEND_PID" 2>/dev/null && kill -0 "$FRONTEND_PID" 2>/dev/null; do
