@@ -129,7 +129,7 @@ trap cleanup EXIT INT TERM
 
 (cd backend && exec node server.js) &
 BACKEND_PID=$!
-(cd frontend && exec env BROWSER=none PORT="$FRONTEND_PORT" ./node_modules/.bin/react-scripts start) &
+(cd frontend && exec env BROWSER=none PORT="$FRONTEND_PORT" REACT_APP_API_URL="http://127.0.0.1:$BACKEND_PORT/api" ./node_modules/.bin/react-scripts start) &
 FRONTEND_PID=$!
 
 while kill -0 "$BACKEND_PID" 2>/dev/null && kill -0 "$FRONTEND_PID" 2>/dev/null; do
