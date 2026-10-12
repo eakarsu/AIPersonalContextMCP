@@ -12,7 +12,7 @@ export default function AIRedactionSuggesterPage() {
         { key: 'snippet', label: 'Snippet', type: 'textarea', placeholder: '' },
         { key: 'target_app', label: 'Target App', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiRedactionSuggester(v)}
+      run={(v, requestOptions) => aiRedactionSuggester(v, requestOptions)}
     />
   );
 }

@@ -13,7 +13,7 @@ export default function AIAnswerFromContextPage() {
         { key: 'question', label: 'App\'s Question', type: 'textarea', placeholder: '' },
         { key: 'allowed_sources', label: 'Allowed Sources', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiAnswerFromContext(v)}
+      run={(v, requestOptions) => aiAnswerFromContext(v, requestOptions)}
     />
   );
 }

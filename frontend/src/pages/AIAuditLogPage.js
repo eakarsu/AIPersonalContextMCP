@@ -11,7 +11,7 @@ export default function AIAuditLogPage() {
       inputs={[
         { key: 'time_range', label: 'Range', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiAuditLog(v)}
+      run={(v, requestOptions) => aiAuditLog(v, requestOptions)}
     />
   );
 }

@@ -12,7 +12,7 @@ export default function AIPrivacyRiskScorePage() {
         { key: 'app_name', label: 'App', type: 'text', placeholder: '' },
         { key: 'requested_scopes', label: 'Requested Scopes', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiPrivacyRiskScore(v)}
+      run={(v, requestOptions) => aiPrivacyRiskScore(v, requestOptions)}
     />
   );
 }

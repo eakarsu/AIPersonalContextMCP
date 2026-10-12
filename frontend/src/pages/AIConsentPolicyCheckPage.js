@@ -12,7 +12,7 @@ export default function AIConsentPolicyCheckPage() {
         { key: 'requesting_app', label: 'Requesting App', type: 'text', placeholder: '' },
         { key: 'requested_fields', label: 'Fields', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiConsentPolicyCheck(v)}
+      run={(v, requestOptions) => aiConsentPolicyCheck(v, requestOptions)}
     />
   );
 }

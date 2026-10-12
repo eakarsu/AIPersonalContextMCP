@@ -13,7 +13,7 @@ export default function AIQueryRewriterPage() {
         { key: 'user_context', label: 'User Context Hints', type: 'textarea', placeholder: 'optional facts about user' },
         { key: 'target_app', label: 'Target App', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiQueryRewriter(v)}
+      run={(v, requestOptions) => aiQueryRewriter(v, requestOptions)}
     />
   );
 }

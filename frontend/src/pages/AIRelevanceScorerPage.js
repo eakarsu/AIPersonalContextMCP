@@ -10,9 +10,9 @@ export default function AIRelevanceScorerPage() {
       subtitle="Per-query scoring of each candidate context shard."
       inputs={[
         { key: 'query', label: 'Query', type: 'text', placeholder: '' },
-        { key: 'candidate_shards', label: 'Candidate Shards (JSON array)', type: 'textarea', placeholder: '[{"id":"…","text":"…","source":"…"}]' }
+        { key: 'candidate_shards', label: 'Candidate Shards (JSON array)', type: 'json', jsonShape: 'array', example: [{ id: 'fictional-draft-a', text: 'Fictional planning note: an illustrative trip next month.', source: 'fictional draft notes' }], placeholder: '[{"id":"local-draft-label","text":"Fictional note content","source":"fictional draft notes"}]' }
       ]}
-      run={(v) => aiRelevanceScorer(v)}
+      run={(v, requestOptions) => aiRelevanceScorer(v, requestOptions)}
     />
   );
 }

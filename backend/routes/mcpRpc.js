@@ -126,7 +126,8 @@ const AI_SCHEMAS = {
 };
 
 // ---------- Tool implementations ----------
-async function callTool(name, args) {
+async function callTool(name, args, options = {}) {
+  options.signal?.throwIfAborted();
   args = args || {};
   switch (name) {
     case 'list_consents': {
@@ -172,11 +173,22 @@ async function callTool(name, args) {
   }
   const aiTool = AI_SCHEMAS[name];
   if (aiTool) {
-    const result = await ai.runFeature(aiTool.slug, aiTool.schema, args);
+    const contract = TOOLS.find(tool => tool.name === name).inputSchema;
+    for (const key of contract.required || []) if (typeof args[key] !== 'string' || !args[key].trim()) throw new Error(`${key} required`);
+    for (const [key, schema] of Object.entries(contract.properties)) if (args[key] !== undefined && typeof args[key] !== schema.type) throw new Error(`${key} must be ${schema.type}`);
+    const result = await ai.runFeature(aiTool.slug, aiTool.schema, args, options);
+    options.signal?.throwIfAborted();
+    const client = await pool.connect();
     try {
-      await pool.query('INSERT INTO ai_results (feature, input, output) VALUES ($1,$2,$3)',
-        [aiTool.slug, args, result]);
-    } catch (_) {}
+      await client.query('BEGIN');
+      options.signal?.throwIfAborted();
+      await client.query('INSERT INTO ai_results (feature, input, output) VALUES ($1,$2,$3)', [aiTool.slug, args, result]);
+      options.signal?.throwIfAborted();
+      await client.query('COMMIT');
+    } catch (failure) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw failure;
+    } finally { client.release(); }
     return result;
   }
   throw new Error(`unknown tool: ${name}`);
@@ -195,6 +207,10 @@ router.post('/rpc', async (req, res) => {
   if (!method || typeof method !== 'string') {
     return res.json(rpcError(id, -32600, 'method required'));
   }
+  const controller = new AbortController();
+  const abort = () => { if (!res.writableEnded) controller.abort(); };
+  req.once('aborted', abort); res.once('close', abort);
+  if (req.aborted || res.destroyed) controller.abort();
   try {
     if (method === 'initialize') {
       return res.json(rpcResult(id, {
@@ -209,7 +225,8 @@ router.post('/rpc', async (req, res) => {
     if (method === 'tools/call') {
       const { name, arguments: args } = params || {};
       if (!name) return res.json(rpcError(id, -32602, 'tool name required'));
-      const out = await callTool(name, args);
+      const out = await callTool(name, args, { signal: controller.signal });
+      controller.signal.throwIfAborted();
       return res.json(rpcResult(id, {
         content: [{ type: 'text', text: JSON.stringify(out, null, 2) }],
         structuredContent: out,
@@ -220,8 +237,9 @@ router.post('/rpc', async (req, res) => {
     }
     return res.json(rpcError(id, -32601, `method not found: ${method}`));
   } catch (e) {
+    if (controller.signal.aborted || res.destroyed) return;
     return res.json(rpcError(id, -32000, e.message));
-  }
+  } finally { req.off('aborted', abort); res.off('close', abort); }
 });
 
 router.get('/rpc/manifest', (req, res) => {

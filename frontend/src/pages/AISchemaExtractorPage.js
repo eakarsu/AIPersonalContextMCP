@@ -12,7 +12,7 @@ export default function AISchemaExtractorPage() {
         { key: 'sample_data', label: 'Sample Data', type: 'textarea', placeholder: '' },
         { key: 'source_hint', label: 'Source Hint', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiSchemaExtractor(v)}
+      run={(v, requestOptions) => aiSchemaExtractor(v, requestOptions)}
     />
   );
 }

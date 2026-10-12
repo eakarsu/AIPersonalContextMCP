@@ -13,7 +13,7 @@ export default function AIContextSummarizerPage() {
         { key: 'raw_context', label: 'Raw Context', type: 'textarea', placeholder: 'paste raw context here…' },
         { key: 'target_app', label: 'Target App', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiContextSummarizer(v)}
+      run={(v, requestOptions) => aiContextSummarizer(v, requestOptions)}
     />
   );
 }

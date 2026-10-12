@@ -55,18 +55,18 @@ export const mcp_clientsApi = crud('mcp-clients');
 export const schemasApi = crud('schemas');
 export const redaction_rulesApi = crud('redaction-rules');
 
-export const aiAnswerFromContext = (body) => request('/ai/answer-from-context', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiConsentPolicyCheck = (body) => request('/ai/consent-policy-check', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiAuditLog = (body) => request('/ai/audit-log', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiRedactionSuggester = (body) => request('/ai/redaction-suggester', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiPrivacyRiskScore = (body) => request('/ai/privacy-risk-score', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiIntentClassifier = (body) => request('/ai/intent-classifier', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiSchemaExtractor = (body) => request('/ai/schema-extractor', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiAnswerFromContext = (body, options = {}) => request('/ai/answer-from-context', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiConsentPolicyCheck = (body, options = {}) => request('/ai/consent-policy-check', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiAuditLog = (body, options = {}) => request('/ai/audit-log', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiRedactionSuggester = (body, options = {}) => request('/ai/redaction-suggester', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiPrivacyRiskScore = (body, options = {}) => request('/ai/privacy-risk-score', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiIntentClassifier = (body, options = {}) => request('/ai/intent-classifier', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiSchemaExtractor = (body, options = {}) => request('/ai/schema-extractor', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
 // Apply pass 7 (full backlog implementation)
-export const aiContextSummarizer = (body) => request('/ai/context-summarizer', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiRelevanceScorer   = (body) => request('/ai/relevance-scorer',   { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiQueryRewriter     = (body) => request('/ai/query-rewriter',     { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiConflictDetector  = (body) => request('/ai/conflict-detector',  { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiContextSummarizer = (body, options = {}) => request('/ai/context-summarizer', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiRelevanceScorer   = (body, options = {}) => request('/ai/relevance-scorer',   { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiQueryRewriter     = (body, options = {}) => request('/ai/query-rewriter',     { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiConflictDetector  = (body, options = {}) => request('/ai/conflict-detector',  { ...options, method: 'POST', body: JSON.stringify(body || {}) });
 
 export const dpBudgetsApi = {
   list: () => request('/dp-budgets'),
@@ -95,8 +95,8 @@ export const getContextBundle = (app_name) => {
 };
 
 export const getMcpManifest = () => request('/mcp/rpc/manifest');
-export const callMcpRpc = (method, params, id = 1) =>
-  request('/mcp/rpc', { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id, method, params: params || {} }) });
+export const callMcpRpc = (method, params, id = 1, options = {}) =>
+  request('/mcp/rpc', { ...options, method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id, method, params: params || {} }) });
 export const disclosureSimulate = (body) => request('/disclosure-simulator/simulate', { method: 'POST', body: JSON.stringify(body || {}) });
 
 export const oauthStatus = (provider) => request(`/oauth/${provider}/status`);

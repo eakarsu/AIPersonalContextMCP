@@ -11,7 +11,7 @@ export default function AIIntentClassifierPage() {
       inputs={[
         { key: 'app_query', label: 'App\'s Query', type: 'textarea', placeholder: '' }
       ]}
-      run={(v) => aiIntentClassifier(v)}
+      run={(v, requestOptions) => aiIntentClassifier(v, requestOptions)}
     />
   );
 }

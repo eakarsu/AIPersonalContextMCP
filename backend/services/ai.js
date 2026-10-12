@@ -12,11 +12,13 @@ const SYSTEM_BASE = 'You are a senior analyst supporting the Personal Context MC
   '(4) Keep concise to fit token limit; never truncate. ' +
   '(5) First char must be `{`, last must be `}`.';
 
-async function callOpenRouter(systemPrompt, userPrompt) {
+async function callOpenRouter(systemPrompt, userPrompt, options = {}) {
+    options.signal?.throwIfAborted();
     const { key, model, baseUrl } = creds();
     if (!key) throw new Error('OPENROUTER_API_KEY not configured');
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
+      signal: options.signal,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${key}`,
@@ -29,6 +31,7 @@ async function callOpenRouter(systemPrompt, userPrompt) {
       }),
     });
     const body = await response.text();
+    options.signal?.throwIfAborted();
     let parsed;
     try { parsed = JSON.parse(body); } catch (_) { throw new Error(`OpenRouter returned invalid JSON (${response.status})`); }
     if (!response.ok || parsed.error) throw new Error(parsed.error?.message || `OpenRouter request failed (${response.status})`);
@@ -99,10 +102,12 @@ function safeParse(response, fallback) {
   }
   return { ...fallback, summary: stripped };
 }
-async function runFeature(slug, schema, payload) {
+async function runFeature(slug, schema, payload, options = {}) {
+  options.signal?.throwIfAborted();
   const sys = `${SYSTEM_BASE}\nReturn strict JSON in this schema:\n${schema}`;
   const usr = `Feature: ${slug}\nInputs:\n${JSON.stringify(payload, null, 2)}`;
-  const r = await callOpenRouter(sys, usr);
+  const r = await callOpenRouter(sys, usr, options);
+  options.signal?.throwIfAborted();
   return safeParse(r, { summary: typeof r === 'string' ? r : 'No response' });
 }
 module.exports = { runFeature };
