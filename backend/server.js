@@ -52,6 +52,7 @@ app.use('/api/oauth', require('./routes/oauthStubs'));           // NEEDS-CREDS 
 app.use('/api/mcp', require('./routes/mcpRpc'));                 // live JSON-RPC
 app.use('/api/disclosure-simulator', require('./routes/disclosureSimulator'));
 
+app.use('/api/feature-pack', require('./routes/featurePack41b'));
 // 404 fallback for unknown /api/* routes
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found', path: req.originalUrl }));
 
